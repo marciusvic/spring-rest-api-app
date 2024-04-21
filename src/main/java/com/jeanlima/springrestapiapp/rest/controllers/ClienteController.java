@@ -7,6 +7,7 @@ import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,6 +81,20 @@ public class ClienteController {
 
         Example example = Example.of(filtro, matcher);
         return clientes.findAll(example);
+    }
+
+    @PatchMapping("{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Cliente updatePartialCliente (@PathVariable Integer id,
+                                         @RequestBody Cliente cliente){
+        return clientes.findById(id)
+        .map(clienteExistente -> {
+            if (cliente.getNome() != null) {
+                clienteExistente.setNome(cliente.getNome());
+            }
+            return clientes.save(clienteExistente);
+        })
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
     }
 
 }

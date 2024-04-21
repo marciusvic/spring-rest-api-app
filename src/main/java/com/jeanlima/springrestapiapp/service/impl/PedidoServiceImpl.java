@@ -90,6 +90,9 @@ public class PedidoServiceImpl implements PedidoService {
             return repository.save(pedido);
         }).orElseThrow(() -> new PedidoNaoEncontradoException() );
     }
-    
+    @Override
+    public void deletarPedido(Pedido pedido){
+        repository.delete(pedido);
+    }
     
 }
