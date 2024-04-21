@@ -92,6 +92,9 @@ public class PedidoServiceImpl implements PedidoService {
     }
     @Override
     public void deletarPedido(Pedido pedido){
+        for (ItemPedido item : pedido.getItens()) {
+            itemsPedidoRepository.delete(item);
+        }
         repository.delete(pedido);
     }
     

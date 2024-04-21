@@ -89,13 +89,11 @@ public class PedidoController {
 
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete( @PathVariable Integer id ){
-        service.obterPedidoCompleto(id)
-        .map( pedido -> {
-            service.deletarPedido(pedido);
-            return pedido;
-        })
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Pedido não encontrado") );
+    public void delete(@PathVariable Integer id) {
+        Pedido pedido = service.obterPedidoCompleto(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Pedido não encontrado"));
+        service.deletarPedido(pedido);
     }
+    
 }
