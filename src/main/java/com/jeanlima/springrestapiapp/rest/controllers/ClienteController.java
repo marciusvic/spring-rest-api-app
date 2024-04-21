@@ -1,6 +1,7 @@
 package com.jeanlima.springrestapiapp.rest.controllers;
 
 import java.util.List;
+import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -17,7 +18,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.jeanlima.springrestapiapp.model.Pedido;
+import com.jeanlima.springrestapiapp.rest.dto.ClientePedidosDTO;
+import com.jeanlima.springrestapiapp.rest.dto.InfoPedidoDTO;
+import com.jeanlima.springrestapiapp.rest.dto.InformacaoItemPedidoDTO;
 import com.jeanlima.springrestapiapp.model.Cliente;
+import com.jeanlima.springrestapiapp.model.ItemPedido;
 import com.jeanlima.springrestapiapp.repository.ClienteRepository;
 
 
@@ -95,6 +101,35 @@ public class ClienteController {
             return clientes.save(clienteExistente);
         })
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+    }
+
+    @GetMapping("/pedidos/{id}")
+    public ClientePedidosDTO getClientePedidos(@PathVariable Integer id){
+        Cliente cliente = clientes
+                .findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+
+        List<InfoPedidoDTO> listaPedidos = new ArrayList<>();
+        List<InformacaoItemPedidoDTO> listaItens = new ArrayList<>();
+        for (Pedido pedido: cliente.getPedidos()) {
+            for (ItemPedido item: pedido.getItens()) {
+                listaItens.add(InformacaoItemPedidoDTO.builder()
+                        .descricaoProduto(item.getProduto().getDescricao())
+                        .precoUnitario(item.getProduto().getPreco())
+                        .quantidade(item.getQuantidade())
+                        .build());
+            }
+            listaPedidos.add(InfoPedidoDTO.builder()
+                    .codigo(pedido.getId())
+                    .dataPedido(pedido.getDataPedido().toString())
+                    .itens(listaItens)
+                    .build());
+        }
+        return ClientePedidosDTO.builder()
+                .cpf(cliente.getCpf())
+                .nomeCliente(cliente.getNome())
+                .pedidos(listaPedidos)
+                .build();
     }
 
 }
