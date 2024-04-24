@@ -24,10 +24,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.jeanlima.springrestapiapp.model.Produto;
 import com.jeanlima.springrestapiapp.repository.ProdutoRepository;
 
-
-
-
-
 @RestController
 @RequestMapping("/api/produtos")
 public class ProdutoController {
