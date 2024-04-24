@@ -12,6 +12,7 @@ import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -82,32 +83,42 @@ public class EstoqueController {
 
     @GetMapping
     public List<EstoqueDTO> find(EstoqueDTO filtro) {
-    ExampleMatcher matcher = ExampleMatcher
-            .matching()
-            .withIgnoreCase()
-            .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
+        ExampleMatcher matcher = ExampleMatcher
+                .matching()
+                .withIgnoreCase()
+                .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
 
-    Estoque estoqueFiltro = new Estoque();
-    estoqueFiltro.setQuantidade(filtro.getQuantidade());
-    Example<Estoque> example = Example.of(estoqueFiltro, matcher);
-    List<Estoque> estoques = repository.findAll(example);
-    List<EstoqueDTO> estoqueDTOs = new ArrayList<>();
-    for (Estoque estoque : estoques) {
-        ProdutoDTO produtoDTO = new ProdutoDTO(
-            estoque.getProduto().getId(),
-            estoque.getProduto().getDescricao(),
-            estoque.getProduto().getPreco()
-        );
-        EstoqueDTO estoqueDTO = new EstoqueDTO(
-            estoque.getId(),
-            estoque.getQuantidade(),
-            produtoDTO
-        );
-        estoqueDTOs.add(estoqueDTO);
+        Estoque estoqueFiltro = new Estoque();
+        estoqueFiltro.setQuantidade(filtro.getQuantidade());
+        Example<Estoque> example = Example.of(estoqueFiltro, matcher);
+        List<Estoque> estoques = repository.findAll(example);
+        List<EstoqueDTO> estoqueDTOs = new ArrayList<>();
+        for (Estoque estoque : estoques) {
+            ProdutoDTO produtoDTO = new ProdutoDTO(
+                estoque.getProduto().getId(),
+                estoque.getProduto().getDescricao(),
+                estoque.getProduto().getPreco()
+            );
+            EstoqueDTO estoqueDTO = new EstoqueDTO(
+                estoque.getId(),
+                estoque.getQuantidade(),
+                produtoDTO
+            );
+            estoqueDTOs.add(estoqueDTO);
+        }
+        
+        return estoqueDTOs;
     }
-    
-    return estoqueDTOs;
-}
+
+    @PatchMapping("{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateStatus(@PathVariable Integer id, @RequestBody EstoqueDTO dto) {
+        Estoque estoque = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Estoque não encontrado."));
+        estoque.setQuantidade(dto.getQuantidade());
+        repository.save(estoque);
+    }
+
 
 
 }

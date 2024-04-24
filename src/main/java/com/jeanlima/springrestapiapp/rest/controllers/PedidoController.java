@@ -79,7 +79,7 @@ public class PedidoController {
         ).collect(Collectors.toList());
     }
 
-     @PatchMapping("{id}")
+    @PatchMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateStatus(@PathVariable Integer id ,
                              @RequestBody AtualizacaoStatusPedidoDTO dto){
