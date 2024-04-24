@@ -1,4 +1,5 @@
 package com.jeanlima.springrestapiapp.service.impl;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,13 @@ public class PedidoServiceImpl implements PedidoService {
         repository.save(pedido);
         itemsPedidoRepository.saveAll(itemsPedido);
         pedido.setItens(itemsPedido);
+        BigDecimal total = BigDecimal.ZERO;
+        for (ItemPedido item : itemsPedido) {
+            Produto produto = item.getProduto();
+            BigDecimal precoItem = produto.getPreco().multiply(BigDecimal.valueOf(item.getQuantidade()));
+            total = total.add(precoItem);
+        }
+        pedido.setTotal(total);
         return pedido;
     }
     private List<ItemPedido> converterItems(Pedido pedido, List<ItemPedidoDTO> items){
