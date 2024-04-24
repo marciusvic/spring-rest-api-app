@@ -97,6 +97,29 @@ public class PedidoServiceImpl implements PedidoService {
                 }).collect(Collectors.toList());
 
     }
+    private List<ItemPedido> converterItemsList(Pedido pedido, List<ItemPedido> items){
+        if(items.isEmpty()){
+            throw new RegraNegocioException("Não é possível realizar um pedido sem items.");
+        }
+
+        return items
+        .stream()
+        .map( dto -> {
+            Integer idProduto = dto.getProduto().getId();
+            Produto produto = produtosRepository
+                    .findById(idProduto)
+                    .orElseThrow(
+                            () -> new RegraNegocioException(
+                                    "Código de produto inválido: "+ idProduto
+                            ));
+
+            ItemPedido itemPedido = new ItemPedido();
+            itemPedido.setQuantidade(dto.getQuantidade());
+            itemPedido.setPedido(pedido);
+            itemPedido.setProduto(produto);
+            return itemPedido;
+        }).collect(Collectors.toList());
+    }
     @Override
     public Optional<Pedido> obterPedidoCompleto(Integer id) {
         return repository.findByIdFetchItens(id);
@@ -116,6 +139,42 @@ public class PedidoServiceImpl implements PedidoService {
             itemsPedidoRepository.delete(item);
         }
         repository.delete(pedido);
+    }
+    @Override
+    public void atualizarPedido(Integer id, PedidoDTO dto){
+        Pedido pedido =  repository
+            .findById(id)
+            .orElseThrow(() -> new PedidoNaoEncontradoException());
+        Cliente cliente = clientesRepository
+            .findById(dto.getCliente())
+            .orElseThrow(() -> new RegraNegocioException("Código de cliente inválido."));
+        pedido.setCliente(cliente);
+        List<ItemPedido> itemsPedido = converterItemsList(pedido, pedido.getItens());
+        for(ItemPedido item : itemsPedido){
+            Estoque estoqueProduto = estoqueRepository
+                .findById(item.getProduto().getId())
+                .orElseThrow(() -> new RegraNegocioException("Produto não encontrado no estoque: "+ item.getProduto().getId()));
+            estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() + item.getQuantidade());
+        }
+        List<ItemPedido> itemsPedidoUpToDate = converterItems(pedido, dto.getItems());
+        for(ItemPedido item : itemsPedidoUpToDate){
+            Estoque estoqueProduto = estoqueRepository
+                .findById(item.getProduto().getId())
+                .orElseThrow(() -> new RegraNegocioException("Produto não encontrado no estoque: "+ item.getProduto().getId()));
+            if(estoqueProduto.getQuantidade() < item.getQuantidade()){
+                throw new RegraNegocioException("Quantidade insuficiente no estoque para o produto: "+ item.getProduto().getDescricao());
+            }
+            estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() - item.getQuantidade());
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (ItemPedido item : itemsPedidoUpToDate) {
+            Produto produto = item.getProduto();
+            BigDecimal precoItem = produto.getPreco().multiply(BigDecimal.valueOf(item.getQuantidade()));
+            total = total.add(precoItem);
+        }
+        pedido.setTotal(total);
+        pedido.setItens(itemsPedidoUpToDate);
+        repository.save(pedido);
     }
     
 }

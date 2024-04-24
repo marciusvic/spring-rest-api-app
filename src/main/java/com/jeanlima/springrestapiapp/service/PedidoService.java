@@ -13,4 +13,5 @@ public interface PedidoService {
     Optional<Pedido> obterPedidoCompleto(Integer id);
     void atualizaStatus(Integer id, StatusPedido statusPedido);
     void deletarPedido(Pedido pedido);
+    void atualizarPedido(Integer id, PedidoDTO dto);
 }
