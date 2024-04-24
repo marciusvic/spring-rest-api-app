@@ -11,10 +11,12 @@ import com.jeanlima.springrestapiapp.enums.StatusPedido;
 import com.jeanlima.springrestapiapp.exception.PedidoNaoEncontradoException;
 import com.jeanlima.springrestapiapp.exception.RegraNegocioException;
 import com.jeanlima.springrestapiapp.model.Cliente;
+import com.jeanlima.springrestapiapp.model.Estoque;
 import com.jeanlima.springrestapiapp.model.ItemPedido;
 import com.jeanlima.springrestapiapp.model.Pedido;
 import com.jeanlima.springrestapiapp.model.Produto;
 import com.jeanlima.springrestapiapp.repository.ClienteRepository;
+import com.jeanlima.springrestapiapp.repository.EstoqueRepository;
 import com.jeanlima.springrestapiapp.repository.ItemPedidoRepository;
 import com.jeanlima.springrestapiapp.repository.PedidoRepository;
 import com.jeanlima.springrestapiapp.repository.ProdutoRepository;
@@ -33,6 +35,7 @@ public class PedidoServiceImpl implements PedidoService {
     private final ClienteRepository clientesRepository;
     private final ProdutoRepository produtosRepository;
     private final ItemPedidoRepository itemsPedidoRepository;
+    private final EstoqueRepository estoqueRepository;
 
     @Override
     @Transactional
@@ -49,6 +52,15 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setStatus(StatusPedido.REALIZADO);
 
         List<ItemPedido> itemsPedido = converterItems(pedido, dto.getItems());
+        for(ItemPedido item : itemsPedido){
+            Estoque estoqueProduto = estoqueRepository
+                    .findById(item.getProduto().getId())
+                    .orElseThrow(() -> new RegraNegocioException("Produto não encontrado no estoque: "+ item.getProduto().getId()));
+            if(estoqueProduto.getQuantidade() < item.getQuantidade()){
+                throw new RegraNegocioException("Quantidade insuficiente no estoque para o produto: "+ item.getProduto().getDescricao());
+            }
+            estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() - item.getQuantidade());
+        }
         repository.save(pedido);
         itemsPedidoRepository.saveAll(itemsPedido);
         pedido.setItens(itemsPedido);
