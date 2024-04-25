@@ -14,6 +14,7 @@ import com.jeanlima.springrestapiapp.service.EstoqueService;
 import jakarta.persistence.criteria.CriteriaBuilder.In;
 
 import com.jeanlima.springrestapiapp.rest.dto.CreateEstoqueDTO;
+import com.jeanlima.springrestapiapp.rest.dto.EstoqueDTO;
 import com.jeanlima.springrestapiapp.rest.dto.ProdutoDTO;
 import com.jeanlima.springrestapiapp.exception.RegraNegocioException;
 
@@ -51,7 +52,7 @@ public class EstoqueServiceImpl implements EstoqueService {
         return estoqueRepository.save(estoque);
     }
     @Override
-    public Estoque findByNome(String nome) {
+    public EstoqueDTO findByNome(String nome) {
         List<Estoque> estoques = estoqueRepository.findAll();
         String nomeSemAspas = nome.substring(1, nome.length() - 1);
         System.out.println(nomeSemAspas);
@@ -62,7 +63,17 @@ public class EstoqueServiceImpl implements EstoqueService {
                 System.out.println(estoque.getProduto().getDescricao() + " " + estoqueId);
             }
         }
-        return estoqueRepository.findById(estoqueId)
+        Estoque estoque = estoqueRepository.findById(estoqueId)
                 .orElseThrow(() -> new RegraNegocioException("Estoque não encontrado."));
+        ProdutoDTO produtoDTO = new ProdutoDTO(
+                estoque.getProduto().getId(),
+                estoque.getProduto().getDescricao(),
+                estoque.getProduto().getPreco()
+        );
+        return EstoqueDTO.builder()
+                .id(estoque.getId())
+                .quantidade(estoque.getQuantidade())
+                .produto(produtoDTO)
+                .build();
     }
 }
