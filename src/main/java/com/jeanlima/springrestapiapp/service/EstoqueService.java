@@ -7,4 +7,5 @@ import com.jeanlima.springrestapiapp.rest.dto.CreateEstoqueDTO;
 public interface EstoqueService {
     Estoque salvarEstoque(CreateEstoqueDTO createEstoqueDTO);
     Estoque atualizarEstoque(Integer id, CreateEstoqueDTO createEstoqueDTO);
+    Estoque findByNome(String nome);
 }

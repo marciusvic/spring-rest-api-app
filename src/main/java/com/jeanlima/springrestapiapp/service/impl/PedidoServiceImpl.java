@@ -28,8 +28,6 @@ import com.jeanlima.springrestapiapp.service.PedidoService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
-import com.jeanlima.springrestapiapp.enums.StatusPedido;
-
 @Service
 @RequiredArgsConstructor
 public class PedidoServiceImpl implements PedidoService {
@@ -173,7 +171,6 @@ public class PedidoServiceImpl implements PedidoService {
                 throw new RegraNegocioException("Quantidade insuficiente no estoque para o produto: "+ item.getProduto().getDescricao());
             }
             estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() - item.getQuantidade());
-            System.out.println("Estoque atualizado: " + estoqueProduto);
             estoqueRepository.save(estoqueProduto);
         }
         itemsPedidoRepository.saveAll(itemsPedidoUpToDate);

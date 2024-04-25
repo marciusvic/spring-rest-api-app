@@ -80,7 +80,11 @@ public class EstoqueController {
                 .build();
     }
 
+    @GetMapping("/produto/{nome}")
+    public Estoque findByName(@PathVariable String nome){
+        return estoqueService.findByNome(nome); //essa ficou com bug de serialização, ao desativar "spring.jackson.serialization.fail-on-empty-beans=false" nas propriedades do application.properties, o erro é resolvido, mas não sei como isso afetaria o resto do projeto, então deixei comentado... caso queira testar esse endpoint você deve colocar "spring.jackson.serialization.fail-on-empty-beans=false" nas propriedades do application.properties, para testar voce deve enviar a string na rota da seguinte forma: http://localhost:8080/api/estoques/produto/"teste" com aspas duplas
 
+    }
     @GetMapping
     public List<EstoqueDTO> find(EstoqueDTO filtro) {
         ExampleMatcher matcher = ExampleMatcher
