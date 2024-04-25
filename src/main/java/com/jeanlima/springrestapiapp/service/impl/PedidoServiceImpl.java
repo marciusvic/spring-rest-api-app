@@ -100,6 +100,29 @@ public class PedidoServiceImpl implements PedidoService {
                 }).collect(Collectors.toList());
 
     }
+    private List<ItemPedido> converterItemsList(Pedido pedido, List<ItemPedido> items){
+        if(items.isEmpty()){
+            throw new RegraNegocioException("Não é possível realizar um pedido sem items.");
+        }
+
+        return items
+        .stream()
+        .map( dto -> {
+            Integer idProduto = dto.getProduto().getId();
+            Produto produto = produtosRepository
+                    .findById(idProduto)
+                    .orElseThrow(
+                            () -> new RegraNegocioException(
+                                    "Código de produto inválido: "+ idProduto
+                            ));
+
+            ItemPedido itemPedido = new ItemPedido();
+            itemPedido.setQuantidade(dto.getQuantidade());
+            itemPedido.setPedido(pedido);
+            itemPedido.setProduto(produto);
+            return itemPedido;
+        }).collect(Collectors.toList());
+    }
     @Override
     public Optional<Pedido> obterPedidoCompleto(Integer id) {
         return repository.findByIdFetchItens(id);
@@ -128,13 +151,7 @@ public class PedidoServiceImpl implements PedidoService {
         Cliente cliente = clientesRepository
             .findById(dto.getCliente())
             .orElseThrow(() -> new RegraNegocioException("Código de cliente inválido."));
-        Pedido pedidoItensFormat = new Pedido();
-        pedidoItensFormat.setItens(pedido.getItens());
-        pedidoItensFormat.setTotal(pedido.getTotal());
-        pedidoItensFormat.setDataPedido(pedido.getDataPedido());
-        pedidoItensFormat.setStatus(pedido.getStatus());
-        pedidoItensFormat.setId(pedido.getId());
-        List<ItemPedido> itemsPedido = converterItems(pedidoItensFormat, dto.getItems());
+        List<ItemPedido> itemsPedido = converterItemsList(pedido, pedido.getItens());
         for(ItemPedido item : itemsPedido){
             Estoque estoqueProduto = estoqueRepository
                 .findById(item.getProduto().getId())
@@ -142,25 +159,39 @@ public class PedidoServiceImpl implements PedidoService {
             estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() + item.getQuantidade());
         }
         List<ItemPedido> itemsPedidoUpToDate = new ArrayList<>();
-        System.out.println("Lista dto" + dto.getItems());
         for(ItemPedidoDTO itemDto: dto.getItems()) {
             ItemPedido item = new ItemPedido();
             item.setProduto(produtosRepository.findById(itemDto.getProduto()).orElseThrow(() -> new RegraNegocioException("Produto não encontrado: "+ itemDto.getProduto())));
             item.setQuantidade(itemDto.getQuantidade());
             itemsPedidoUpToDate.add(item);
         }
+        for(ItemPedido item : itemsPedidoUpToDate){
+            Estoque estoqueProduto = estoqueRepository
+                .findById(item.getProduto().getId())
+                .orElseThrow(() -> new RegraNegocioException("Produto não encontrado no estoque: "+ item.getProduto().getId()));
+            if(estoqueProduto.getQuantidade() < item.getQuantidade()){
+                throw new RegraNegocioException("Quantidade insuficiente no estoque para o produto: "+ item.getProduto().getDescricao());
+            }
+            estoqueProduto.setQuantidade(estoqueProduto.getQuantidade() - item.getQuantidade());
+            System.out.println("Estoque atualizado: " + estoqueProduto);
+            estoqueRepository.save(estoqueProduto);
+        }
         itemsPedidoRepository.saveAll(itemsPedidoUpToDate);
-        System.out.println("Lista itens para serem preenchdis" + itemsPedidoUpToDate);
         BigDecimal total = BigDecimal.ZERO;
         for (ItemPedido item : itemsPedidoUpToDate) {
             Produto produto = item.getProduto();
             BigDecimal precoItem = produto.getPreco().multiply(BigDecimal.valueOf(item.getQuantidade()));
             total = total.add(precoItem);
         }
+        for (ItemPedido item : pedido.getItens()) {
+            itemsPedidoRepository.delete(item);
+        }
+        for (ItemPedido item : itemsPedidoUpToDate) {
+            item.setPedido(pedido);
+        }
         pedido.setCliente(cliente);
         pedido.setTotal(total);
         pedido.setItens(itemsPedidoUpToDate);
-        System.out.println("Pedido atualizado" + pedido.getItens());
         pedido.setStatus(StatusPedido.REALIZADO);
         repository.save(pedido);
     }
